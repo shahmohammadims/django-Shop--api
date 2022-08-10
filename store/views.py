@@ -1,13 +1,6 @@
-from django.shortcuts import redirect, render
 from .models import Product, Category, Comment
-from orders.forms import CartAddForm
-from .forms import CommentCreateForm, CommentReplyForm
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
 from .serializers import ProductSerializer, CategorySerializer, CommentSerializer
 
@@ -38,7 +31,6 @@ class CategoryProductsView(APIView):
         my_data = Product.objects.filter(category=category)
         products = ProductSerializer(my_data, many=True, context={'request': request})
         return Response(products.data)
-
 
 
 class ProductDetailView(APIView):
