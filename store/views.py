@@ -50,7 +50,7 @@ class ProductDetailView(APIView):
             product = product,
             author = request.user,
             reply = comment['reply'],
-            is_reply = comment['is_reply'],
+            is_reply = False,
             body = comment['body'],
         )
         new_comment.save()
@@ -70,9 +70,15 @@ class AllProducts(APIView):
 
 
 class AddReply(APIView):
-    def post(self, request, product_id, comment_id):
+    def get(self, request, product_id, comment_id):
+        global product, comment
         product = Product.objects.get(id=product_id)
         comment = Comment.objects.get(id=comment_id)
+        product_serializer = ProductSerializer(product)
+        comment_serializer = CommentSerializer(comment)
+        return Response({'product': product_serializer.data, 'The desired comment': comment_serializer.data})
+
+    def post(self, request, product_id, comment_id):
         reply_comment = request.data
         Comment.objects.create(
             author = request.user,

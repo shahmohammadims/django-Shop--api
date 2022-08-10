@@ -1,65 +1,33 @@
-from django.shortcuts import redirect, render
-from django.contrib.auth.views import LogoutView
-from .forms import UserLoginForm, UserRegistrationForm
-from django.views import View
-from django.contrib.auth import authenticate, login, views as auth_views
+import random
+from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
-from django.contrib import messages
+from django.core.cache import cache
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import User
+from .models import User, Device
 
 
-
-class UserRegistrationView(View):
-    form_class = UserRegistrationForm
-    template_name = 'accounts/login.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated:
-            messages.error(request, 'باید ابتدا از حساب کاربری خود خارج شوید', 'warning')
-            return redirect('store:home')
-        return super().dispatch(request, *args, **kwargs)
-
-
-    def get(self, request):
-        form = self.form_class()
-        return render(request, self.template_name, {'form': form})
-    
+class RegisterView(APIView):
 
     def post(self, request):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            cd = form.cleaned_data
-            User.objects.create_user(cd['username'], cd['email'], cd['password1'])
-            return redirect('store:home')
+        phone_number = request.data.get('phone_number')
+        if not phone_number:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         
-        messages.error(request, 'خطایی رخ داد : یا نام کاربری از قبل وجود دارد ، یا ایمیل از قبل وجود دارد ، یا رمز عبورها مشابه نیستند', 'warning')
-        return render(request, self.template_name, {'form': form})
-
-
-
-
-class UserLoginView(View):
-    form_class = UserLoginForm
-
-    def get(self, request):
-        form = self.form_class()
-        return render(request, 'accounts/login.html', {'form': form})
-    
-    
-    def post(self, request):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            cd = form.cleaned_data
-            user = authenticate(request, username=cd['username'], password=cd['password'])
-            if user != None:
-                login(request, user)
-                return redirect('store:home')
-                
-            return redirect('accounts:login')
+        try:
+            user = User.objects.get(phone_number=phone_number)
+            return Response({'detail': 'User already registered'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            user = User.objects.create_user(phone_number=phone_number)
         
 
-class UserLogoutView(LogoutView):
-    pass
+        device = Device.objects.create(user=user)
+        code = random.randint(10000, 99999)
+        cache.set(str(phone_number), code, 2*60)
+
+        return Response({'code': code})
 
 
 
