@@ -1,6 +1,6 @@
 from django.db import models
-from extensions.utils import persian_numbers_converter
 from accounts.models import User
+from extensions.utils import persian_numbers_converter
 
 
 class Category(models.Model):

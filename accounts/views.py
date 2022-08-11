@@ -29,21 +29,3 @@ class RegisterView(APIView):
 
         return Response({'code': code})
 
-
-
-# Reset Password
-class UserResetPasswordView(auth_views.PasswordResetView):
-    template_name = 'accounts/password_reset_form.html'
-    success_url = reverse_lazy('accounts:password_reset_done')
-    email_template_name = 'accounts/password_reset_email.html'
-
-class UserPasswordResetDoneView(auth_views.PasswordResetDoneView):
-    template_name = 'accounts/password_reset_done.html'
-
-class UserPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
-    template_name = 'accounts/password_reset_confirm.html'
-    success_url = reverse_lazy('accounts:password_reset_complete')
-
-class UserPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
-    template_name = 'accounts/password_reset_complete.html'
-

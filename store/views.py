@@ -1,24 +1,29 @@
-from .models import Product, Category, Comment
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView
+from .models import Product, Category, Comment
 from .serializers import ProductSerializer, CategorySerializer, CommentSerializer
 
 
 
 
-class CategoriesView(APIView):
-    def get(self, request):
-        categories = Category.objects.all()
-        serializer= CategorySerializer(categories, many=True, context={'request': request})
-        return Response(serializer.data)
+class CategoriesView(ListAPIView):
+    model = Category
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
 
 
 class ProductsView(APIView):
     def get(self, request):
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True, context={'request': request})
-        return Response(serializer.data)
+        if request.GET.get('search'):
+            products = Product.objects.filter(title__contains=request.GET['search'])
+            serializer = ProductSerializer(products, many=True)
+            return Response(serializer.data)
+        else:
+            products = Product.objects.all()
+            serializer = ProductSerializer(products, many=True)
+            return Response(serializer.data)
 
 
 # فیلد 'تعداد' را باید اضافه کنم
@@ -34,10 +39,15 @@ class CategoryProductsView(APIView):
 
 
 class ProductDetailView(APIView):
-    def get(self, request, product_id):
-        global product
-        product = Product.objects.get(id=product_id)
-        comments = product.product_comments.filter(is_reply=False)
+    def get(self, request, product_slug):
+        try:
+            global product
+            product = Product.objects.get(slug=product_slug)
+            comments = product.product_comments.filter(is_reply=False)
+        except Product.DoesNotExist:
+            content = {'Error': 'product not found'}
+            return Response(content, status=status.HTTP_404_NOT_FOUND)
+
         product_serializer = ProductSerializer(product, context={'request': request})
         comments_serializer = CommentSerializer(comments, context={'request': request}, many=True)
         global my_data
@@ -46,47 +56,42 @@ class ProductDetailView(APIView):
     
     def post(self, request, *args, **kwargs):
         comment = request.data
-        new_comment = Comment.objects.create(
-            product = product,
-            author = request.user,
-            reply = comment['reply'],
-            is_reply = False,
-            body = comment['body'],
-        )
-        new_comment.save()
+        try:
+            Comment.objects.create(
+                product = product,
+                author = request.user,
+                is_reply = False,
+                body = comment['body'],
+            )
+        except KeyError:
+            content = {'Error': "You must send us the field 'body' "}
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+            
         return Response(my_data)
 
 
-class AllProducts(APIView):
-    def get(self, request):
-        if request.GET.get('search'):
-            products = Product.objects.filter(title__contains=request.GET['search'])
-            serializer = ProductSerializer(products, many=True)
-            return Response(serializer.data)
-        else:
-            products = Product.objects.all()
-            serializer = ProductSerializer(products, many=True)
-            return Response(serializer.data)
-
-
-class AddReply(APIView):
-    def get(self, request, product_id, comment_id):
-        global product, comment
-        product = Product.objects.get(id=product_id)
-        comment = Comment.objects.get(id=comment_id)
-        product_serializer = ProductSerializer(product)
-        comment_serializer = CommentSerializer(comment)
-        return Response({'product': product_serializer.data, 'The desired comment': comment_serializer.data})
-
-    def post(self, request, product_id, comment_id):
+class AddReplyView(APIView):
+    def post(self, request, comment_id):
+        try:
+            comment = Comment.objects.get(id=comment_id)
+        except Comment.DoesNotExist:
+            content = {'Error': 'comment not found'}
+            return Response(content, status=status.HTTP_404_NOT_FOUND)
+        
         reply_comment = request.data
-        Comment.objects.create(
-            author = request.user,
-            product = product,
-            reply = comment,
-            body = reply_comment['body'],
-            is_reply = True,
-        )
-        serializer = ProductSerializer(product)
+        
+        try:
+            Comment.objects.create(
+                author = request.user,
+                product = comment.product,
+                reply = comment,
+                body = reply_comment['body'],
+                is_reply = True,
+            )
+        except KeyError:
+            content = {'Error': "You must send us the field 'body' "}
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CommentSerializer(comment)
         return Response(serializer.data)
 
