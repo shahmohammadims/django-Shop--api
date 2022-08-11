@@ -15,8 +15,6 @@ class CategorySerializer(serializers.HyperlinkedModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     price = serializers.SerializerMethodField()
-    # quantity = serializers.IntegerField()
-
 
     class Meta:
         model = Product

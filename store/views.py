@@ -26,7 +26,6 @@ class ProductsView(APIView):
             return Response(serializer.data)
 
 
-# فیلد 'تعداد' را باید اضافه کنم
 class CategoryProductsView(APIView):
     def get(self, request, slug):
         try:
