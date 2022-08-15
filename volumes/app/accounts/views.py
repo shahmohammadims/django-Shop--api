@@ -1,12 +1,12 @@
 import random
-from django.contrib.auth import views as auth_views
-from django.urls import reverse_lazy
 from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User
 from .models import User, Device
+from rest_framework.generics import ListAPIView
+from .serializers import UserSerializer
 
 
 class RegisterView(APIView):
