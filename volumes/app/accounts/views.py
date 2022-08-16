@@ -5,8 +5,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import User
 from .models import User, Device
-from rest_framework.generics import ListAPIView
-from .serializers import UserSerializer
 
 
 class RegisterView(APIView):
